@@ -1,143 +1,474 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Time Tracker - Daily Work</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen p-4 text-gray-800">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-xl">
-    <h1 class="text-2xl font-bold mb-4 text-center">🕒 Suivi de travail quotidien</h1>
-    
-    <form id="timeForm" class="space-y-4">
-      <div id="entries" class="space-y-2">
-        <!-- Les lignes seront générées ici -->
-      </div>
-      <button type="button" onclick="addEntry()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        + Ajouter une période
-      </button>
-    </form>
-
-    <div class="mt-6 p-4 bg-gray-50 rounded">
-      <p class="font-semibold">⏱️ Total travaillé : <span id="totalHours">0h 00min</span></p>
-      <p class="font-semibold">🕗 Temps restant (8h) : <span id="remainingHours">8h 00min</span></p>
-    </div>
-
-    <div class="mt-4 flex justify-between">
-      <button onclick="resetAll()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        🔁 Réinitialiser
-      </button>
-      <button onclick="saveToStorage()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-        💾 Sauvegarder
-      </button>
-    </div>
-  </div>
-
-  <script>
-    const WORK_DAY_MINUTES = 8 * 60;
-
-    function createEntryRow(start = '', end = '') {
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('flex', 'space-x-2');
-
-      const startInput = document.createElement('input');
-      startInput.type = 'time';
-      startInput.value = start;
-      startInput.className = 'w-1/2 p-2 border rounded';
-      startInput.oninput = updateTotals;
-
-      const endInput = document.createElement('input');
-      endInput.type = 'time';
-      endInput.value = end;
-      endInput.className = 'w-1/2 p-2 border rounded';
-      endInput.oninput = updateTotals;
-
-      wrapper.appendChild(startInput);
-      wrapper.appendChild(endInput);
-
-      return wrapper;
-    }
-
-    function addEntry(start = '', end = '') {
-      const container = document.getElementById('entries');
-      const row = createEntryRow(start, end);
-      container.appendChild(row);
-      updateTotals();
-    }
-
-    function timeToMinutes(timeStr) {
-      if (!timeStr) return 0;
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    }
-
-    function minutesToTime(mins) {
-      const hours = Math.floor(mins / 60);
-      const minutes = mins % 60;
-      return `${hours}h ${String(minutes).padStart(2, '0')}min`;
-    }
-
-    function updateTotals() {
-      const rows = document.getElementById('entries').children;
-      let totalMinutes = 0;
-      const data = [];
-
-      for (let row of rows) {
-        const [startInput, endInput] = row.querySelectorAll('input');
-        const start = timeToMinutes(startInput.value);
-        const end = timeToMinutes(endInput.value);
-        if (start && end && end > start) {
-          totalMinutes += end - start;
-          data.push({ start: startInput.value, end: endInput.value });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Work Time Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      }
 
-      document.getElementById('totalHours').textContent = minutesToTime(totalMinutes);
-      const remaining = Math.max(WORK_DAY_MINUTES - totalMinutes, 0);
-      document.getElementById('remainingHours').textContent = minutesToTime(remaining);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-      // auto-save silently every change
-      localStorage.setItem('workEntries', JSON.stringify({ data, savedAt: Date.now() }));
-    }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
 
-    function saveToStorage() {
-      alert('Données sauvegardées pour 24h !');
-    }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-    function resetAll() {
-      if (confirm("Tout réinitialiser ?")) {
-        localStorage.removeItem('workEntries');
-        document.getElementById('entries').innerHTML = '';
-        addEntry();
-        updateTotals();
-      }
-    }
+        .header h1 {
+            color: #333;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-    function loadFromStorage() {
-      const stored = JSON.parse(localStorage.getItem('workEntries'));
-      if (!stored) return;
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
 
-      const now = Date.now();
-      const expired = now - stored.savedAt > 24 * 60 * 60 * 1000;
+        .time-entry {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
 
-      if (expired) {
-        localStorage.removeItem('workEntries');
-        return;
-      }
+        .time-entry:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
 
-      for (let entry of stored.data) {
-        addEntry(entry.start, entry.end);
-      }
-    }
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
 
-    // Initial setup
-    window.onload = () => {
-      loadFromStorage();
-      if (document.getElementById('entries').children.length === 0) {
-        addEntry();
-      }
-    };
-  </script>
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .duration {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+
+        .add-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            width: 100%;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .summary-item h3 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .summary-item p {
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .reset-btn, .export-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .export-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .export-btn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .last-saved {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .time-inputs {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Remote Work Time Tracker</h1>
+            <p>Track your work hours effortlessly - Perfect for remote teams!</p>
+        </div>
+
+        <div id="timeEntries">
+            <!-- Time entries will be dynamically added here -->
+        </div>
+
+        <button class="add-btn" onclick="addTimeEntry()">+ Add Time Entry</button>
+
+        <div class="summary">
+            <h2>📊 Daily Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <h3 id="totalHours">0:00</h3>
+                    <p>Hours Worked</p>
+                </div>
+                <div class="summary-item">
+                    <h3 id="remainingHours">8:00</h3>
+                    <p>Hours Remaining</p>
+                </div>
+                <div class="summary-item">
+                    <h3 id="completionPercentage">0%</h3>
+                    <p>Day Complete</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="reset-btn" onclick="resetAll()">🔄 Reset All</button>
+            <button class="export-btn" onclick="exportData()">📋 Export Summary</button>
+        </div>
+
+        <div class="last-saved" id="lastSaved"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'timeTrackerData';
+        const STORAGE_TIMESTAMP = 'timeTrackerTimestamp';
+        const HOURS_PER_DAY = 8;
+        let entryCounter = 0;
+
+        // Load data on page load
+        window.addEventListener('load', function() {
+            loadData();
+            if (document.getElementById('timeEntries').children.length === 0) {
+                addTimeEntry();
+            }
+            updateSummary();
+        });
+
+        function saveData() {
+            const entries = [];
+            const timeEntries = document.querySelectorAll('.time-entry');
+            
+            timeEntries.forEach(entry => {
+                const startTime = entry.querySelector('.start-time').value;
+                const endTime = entry.querySelector('.end-time').value;
+                entries.push({ startTime, endTime });
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+            localStorage.setItem(STORAGE_TIMESTAMP, Date.now().toString());
+            
+            updateLastSaved();
+        }
+
+        function loadData() {
+            const timestamp = localStorage.getItem(STORAGE_TIMESTAMP);
+            if (timestamp) {
+                const lastSaved = new Date(parseInt(timestamp));
+                const now = new Date();
+                const hoursDiff = (now - lastSaved) / (1000 * 60 * 60);
+                
+                // Clear data if older than 24 hours
+                if (hoursDiff > 24) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(STORAGE_TIMESTAMP);
+                    return;
+                }
+            }
+
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                const entries = JSON.parse(savedData);
+                entries.forEach(entry => {
+                    addTimeEntry(entry.startTime, entry.endTime);
+                });
+                updateLastSaved();
+            }
+        }
+
+        function addTimeEntry(startTime = '', endTime = '') {
+            const container = document.getElementById('timeEntries');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'time-entry';
+            entryDiv.innerHTML = `
+                <button class="remove-btn" onclick="removeEntry(this)" title="Remove entry">×</button>
+                <div class="time-inputs">
+                    <div class="input-group">
+                        <label>Start Time</label>
+                        <input type="time" class="start-time" value="${startTime}" onchange="updateSummary(); saveData();">
+                    </div>
+                    <div class="input-group">
+                        <label>End Time</label>
+                        <input type="time" class="end-time" value="${endTime}" onchange="updateSummary(); saveData();">
+                    </div>
+                    <div class="duration">
+                        <div>Duration</div>
+                        <div class="duration-value">0:00</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(entryDiv);
+            updateSummary();
+            saveData();
+        }
+
+        function removeEntry(button) {
+            if (document.querySelectorAll('.time-entry').length > 1) {
+                button.parentElement.remove();
+                updateSummary();
+                saveData();
+            } else {
+                alert('You must have at least one time entry!');
+            }
+        }
+
+        function updateSummary() {
+            let totalMinutes = 0;
+            const timeEntries = document.querySelectorAll('.time-entry');
+            
+            timeEntries.forEach(entry => {
+                const startTime = entry.querySelector('.start-time').value;
+                const endTime = entry.querySelector('.end-time').value;
+                const durationElement = entry.querySelector('.duration-value');
+                
+                if (startTime && endTime) {
+                    const start = new Date(`2000-01-01T${startTime}`);
+                    const end = new Date(`2000-01-01T${endTime}`);
+                    
+                    if (end > start) {
+                        const diffMinutes = (end - start) / (1000 * 60);
+                        totalMinutes += diffMinutes;
+                        durationElement.textContent = formatMinutes(diffMinutes);
+                        durationElement.style.color = '#27ae60';
+                    } else {
+                        durationElement.textContent = 'Invalid';
+                        durationElement.style.color = '#e74c3c';
+                    }
+                } else {
+                    durationElement.textContent = '0:00';
+                    durationElement.style.color = '#666';
+                }
+            });
+
+            const totalHours = totalMinutes / 60;
+            const remainingHours = Math.max(0, HOURS_PER_DAY - totalHours);
+            const completionPercentage = Math.min(100, (totalHours / HOURS_PER_DAY) * 100);
+
+            document.getElementById('totalHours').textContent = formatMinutes(totalMinutes);
+            document.getElementById('remainingHours').textContent = formatMinutes(remainingHours * 60);
+            document.getElementById('completionPercentage').textContent = Math.round(completionPercentage) + '%';
+        }
+
+        function formatMinutes(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            return `${hours}:${mins.toString().padStart(2, '0')}`;
+        }
+
+        function resetAll() {
+            if (confirm('Are you sure you want to reset all data? This action cannot be undone.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(STORAGE_TIMESTAMP);
+                document.getElementById('timeEntries').innerHTML = '';
+                addTimeEntry();
+                updateSummary();
+                document.getElementById('lastSaved').textContent = '';
+            }
+        }
+
+        function exportData() {
+            const timeEntries = document.querySelectorAll('.time-entry');
+            let exportText = `Work Time Summary - ${new Date().toDateString()}\n`;
+            exportText += '=' .repeat(50) + '\n\n';
+            
+            let totalMinutes = 0;
+            timeEntries.forEach((entry, index) => {
+                const startTime = entry.querySelector('.start-time').value;
+                const endTime = entry.querySelector('.end-time').value;
+                const duration = entry.querySelector('.duration-value').textContent;
+                
+                if (startTime && endTime && duration !== 'Invalid' && duration !== '0:00') {
+                    exportText += `Entry ${index + 1}: ${startTime} - ${endTime} (${duration})\n`;
+                    
+                    const start = new Date(`2000-01-01T${startTime}`);
+                    const end = new Date(`2000-01-01T${endTime}`);
+                    if (end > start) {
+                        totalMinutes += (end - start) / (1000 * 60);
+                    }
+                }
+            });
+            
+            exportText += '\n' + '-'.repeat(30) + '\n';
+            exportText += `Total Hours Worked: ${formatMinutes(totalMinutes)}\n`;
+            exportText += `Hours Remaining: ${formatMinutes(Math.max(0, HOURS_PER_DAY * 60 - totalMinutes))}\n`;
+            exportText += `Day Completion: ${Math.round(Math.min(100, (totalMinutes / 60 / HOURS_PER_DAY) * 100))}%`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(exportText).then(() => {
+                alert('Summary copied to clipboard!');
+            }).catch(() => {
+                // Fallback: show in alert
+                alert('Summary:\n\n' + exportText);
+            });
+        }
+
+        function updateLastSaved() {
+            const timestamp = localStorage.getItem(STORAGE_TIMESTAMP);
+            if (timestamp) {
+                const date = new Date(parseInt(timestamp));
+                document.getElementById('lastSaved').textContent = 
+                    `Last saved: ${date.toLocaleString()}`;
+            }
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            if (document.querySelectorAll('.time-entry').length > 0) {
+                saveData();
+            }
+        }, 30000);
+    </script>
 </body>
 </html>
