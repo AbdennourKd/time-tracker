@@ -34,10 +34,10 @@
         }
 
         .header h1 {
-            color: #333;
+            color: #212427;
             font-size: 2.2em;
             margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #667eea, #191d1e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -235,37 +235,37 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>⏰ Remote Work Time Tracker</h1>
-            <p>Track your work hours effortlessly - Perfect for remote teams!</p>
+            <h1>Check-in, Check-out... 7ssab automatique</h1>
+            <p>Les minutes ? On s’en charge. Toi, Ysemmouk t'riyaaaa7 w tchrob taay 🍵</p>
         </div>
 
         <div id="timeEntries">
             <!-- Time entries will be dynamically added here -->
         </div>
 
-        <button class="add-btn" onclick="addTimeEntry()">+ Add Time Entry</button>
+        <button class="add-btn" onclick="addTimeEntry()">+ Zid Créneau y'a KHO</button>
 
         <div class="summary">
-            <h2>📊 Daily Summary</h2>
+            <h2>Ch7al khdamt lyoum ?</h2>
             <div class="summary-grid">
                 <div class="summary-item">
                     <h3 id="totalHours">0:00</h3>
-                    <p>Hours Worked</p>
+                    <p>Wach khdamt (Total worked)</p>
                 </div>
                 <div class="summary-item">
                     <h3 id="remainingHours">8:00</h3>
-                    <p>Hours Remaining</p>
+                    <p>Ch7al B9alek (Remaining)</p>
                 </div>
-                <div class="summary-item">
+                <!--<div class="summary-item">
                     <h3 id="completionPercentage">0%</h3>
                     <p>Day Complete</p>
-                </div>
+                </div>-->
             </div>
         </div>
 
         <div class="controls">
-            <button class="reset-btn" onclick="resetAll()">🔄 Reset All</button>
-            <button class="export-btn" onclick="exportData()">📋 Export Summary</button>
+            <button class="reset-btn" onclick="resetAll()">🔄 3awed m'Zéro</button>
+            <button class="export-btn" onclick="exportData()">📋 Copier le résumé</button>
         </div>
 
         <div class="last-saved" id="lastSaved"></div>
@@ -335,11 +335,11 @@
                 <button class="remove-btn" onclick="removeEntry(this)" title="Remove entry">×</button>
                 <div class="time-inputs">
                     <div class="input-group">
-                        <label>Start Time</label>
+                        <label>Start time (Check-in)</label>
                         <input type="time" class="start-time" value="${startTime}" onchange="updateSummary(); saveData();">
                     </div>
                     <div class="input-group">
-                        <label>End Time</label>
+                        <label>End time (Checkout/Temp-Checkout)</label>
                         <input type="time" class="end-time" value="${endTime}" onchange="updateSummary(); saveData();">
                     </div>
                     <div class="duration">
