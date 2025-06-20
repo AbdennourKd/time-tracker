@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Time Tracker - Daily Work</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 text-gray-800">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-xl">
+    <h1 class="text-2xl font-bold mb-4 text-center">🕒 Suivi de travail quotidien</h1>
+    
+    <form id="timeForm" class="space-y-4">
+      <div id="entries" class="space-y-2">
+        <!-- Les lignes seront générées ici -->
+      </div>
+      <button type="button" onclick="addEntry()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        + Ajouter une période
+      </button>
+    </form>
+
+    <div class="mt-6 p-4 bg-gray-50 rounded">
+      <p class="font-semibold">⏱️ Total travaillé : <span id="totalHours">0h 00min</span></p>
+      <p class="font-semibold">🕗 Temps restant (8h) : <span id="remainingHours">8h 00min</span></p>
+    </div>
+
+    <div class="mt-4 flex justify-between">
+      <button onclick="resetAll()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        🔁 Réinitialiser
+      </button>
+      <button onclick="saveToStorage()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        💾 Sauvegarder
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const WORK_DAY_MINUTES = 8 * 60;
+
+    function createEntryRow(start = '', end = '') {
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('flex', 'space-x-2');
+
+      const startInput = document.createElement('input');
+      startInput.type = 'time';
+      startInput.value = start;
+      startInput.className = 'w-1/2 p-2 border rounded';
+      startInput.oninput = updateTotals;
+
+      const endInput = document.createElement('input');
+      endInput.type = 'time';
+      endInput.value = end;
+      endInput.className = 'w-1/2 p-2 border rounded';
+      endInput.oninput = updateTotals;
+
+      wrapper.appendChild(startInput);
+      wrapper.appendChild(endInput);
+
+      return wrapper;
+    }
+
+    function addEntry(start = '', end = '') {
+      const container = document.getElementById('entries');
+      const row = createEntryRow(start, end);
+      container.appendChild(row);
+      updateTotals();
+    }
+
+    function timeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    }
+
+    function minutesToTime(mins) {
+      const hours = Math.floor(mins / 60);
+      const minutes = mins % 60;
+      return `${hours}h ${String(minutes).padStart(2, '0')}min`;
+    }
+
+    function updateTotals() {
+      const rows = document.getElementById('entries').children;
+      let totalMinutes = 0;
+      const data = [];
+
+      for (let row of rows) {
+        const [startInput, endInput] = row.querySelectorAll('input');
+        const start = timeToMinutes(startInput.value);
+        const end = timeToMinutes(endInput.value);
+        if (start && end && end > start) {
+          totalMinutes += end - start;
+          data.push({ start: startInput.value, end: endInput.value });
+        }
+      }
+
+      document.getElementById('totalHours').textContent = minutesToTime(totalMinutes);
+      const remaining = Math.max(WORK_DAY_MINUTES - totalMinutes, 0);
+      document.getElementById('remainingHours').textContent = minutesToTime(remaining);
+
+      // auto-save silently every change
+      localStorage.setItem('workEntries', JSON.stringify({ data, savedAt: Date.now() }));
+    }
+
+    function saveToStorage() {
+      alert('Données sauvegardées pour 24h !');
+    }
+
+    function resetAll() {
+      if (confirm("Tout réinitialiser ?")) {
+        localStorage.removeItem('workEntries');
+        document.getElementById('entries').innerHTML = '';
+        addEntry();
+        updateTotals();
+      }
+    }
+
+    function loadFromStorage() {
+      const stored = JSON.parse(localStorage.getItem('workEntries'));
+      if (!stored) return;
+
+      const now = Date.now();
+      const expired = now - stored.savedAt > 24 * 60 * 60 * 1000;
+
+      if (expired) {
+        localStorage.removeItem('workEntries');
+        return;
+      }
+
+      for (let entry of stored.data) {
+        addEntry(entry.start, entry.end);
+      }
+    }
+
+    // Initial setup
+    window.onload = () => {
+      loadFromStorage();
+      if (document.getElementById('entries').children.length === 0) {
+        addEntry();
+      }
+    };
+  </script>
+</body>
+</html>
